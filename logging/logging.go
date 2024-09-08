@@ -1,3 +1,4 @@
+
 package logging
 
 import (
@@ -58,7 +59,6 @@ func GinLogger() gin.HandlerFunc {
         param := gin.LogFormatterParams{}
 
         param.TimeStamp = time.Now() // Stop timer
-
         param.ClientIP = c.ClientIP()
         param.Method = c.Request.Method
         param.StatusCode = c.Writer.Status()
@@ -66,7 +66,7 @@ func GinLogger() gin.HandlerFunc {
         //param.Latency = duration
         param.BodySize = c.Writer.Size()
         if param.BodySize == 2 && Dbsql != nil{
-            InsertDownload(path, param.TimeStamp.Format("2006-01-02T15:04:05-07:00"))
+            InsertDownload(path, param.TimeStamp.Format("2006-01-02T15:04:05-07:00"), param.ClientIP)
         }
         if raw != "" {
             path = path + "?" + raw

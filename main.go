@@ -3,24 +3,25 @@
 package main
 
 import (
-    "fmt"
-    "os"
-    "flag"
-    "sync"
-    "time"
-    "strings"
-    "unicode"
-    "path/filepath"
+	"flag"
+	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
+	"sync"
+	"time"
+	"unicode"
 
-    // Configuration
-    "github.com/peterbourgon/ff/v3"
+	// Configuration
+	"github.com/peterbourgon/ff/v3"
 
-    "github.com/gin-gonic/gin"
-    "github.com/rjeczalik/notify" // for live-reload of manifests
+	"github.com/gin-gonic/gin"
+	"github.com/rjeczalik/notify" // for live-reload of manifests
 
-    "rewinged/logging"
-    "rewinged/models"
-    "rewinged/controllers"
+	"rewinged/controllers"
+	"rewinged/logging"
+	"rewinged/models"
 )
 
 // These variables are overwritten at compile/link time using -ldflags
@@ -34,6 +35,7 @@ var jobs chan string = make(chan string)
 
 func main() {
     fs := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+    
     var (
         versionFlagPtr = fs.Bool("version", false, "Print the version information and exit")
         packagePathPtr = fs.String("manifestPath", "./packages", "The directory to search for package manifest files")
@@ -47,6 +49,7 @@ func main() {
         autoInternalizeSkipPtr = fs.String("autoInternalizeSkip", "", "List of hostnames excluded from auto-internalization (comma or space to separate)")
         logLevelPtr            = fs.String("logLevel", "info", "Set log verbosity: disable, error, warn, info, debug or trace")
         statisticsLogFilePtr      = fs.String("stats","", "make log file for packages")
+        trustedProxies         = fs.String("proxy","", "get list of trusted proxy addresses")
         _                      = fs.String("configFile", "", "Path to a json configuration file (optional)")
     )
 
@@ -146,9 +149,12 @@ func main() {
         TlsEnabled: *tlsEnablePtr,
         InternalizationEnabled: *autoInternalizePtr,
     }
-
+    fmt.Println(trustedProxies)
     router := gin.New()
-    router.SetTrustedProxies(nil)
+    if(*trustedProxies != ""){
+        spliter := regexp.MustCompile(`[,\s;]`)
+        router.SetTrustedProxies(spliter.Split(*trustedProxies, -1))
+    }
     router.Use(logging.GinLogger())
     router.Use(gin.Recovery())
     router.Static("/installers", *autoInternalizePathPtr)
